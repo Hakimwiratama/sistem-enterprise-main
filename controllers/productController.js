@@ -1,4 +1,4 @@
-const productModel = require('../models/productModel');
+const productModel = require('../product-service/models/productModel');
 
 function parseId(value) {
     const id = Number(value);
@@ -19,6 +19,18 @@ function validateProduct(body) {
     if (!Number.isInteger(stock) || stock < 0) {
         errors.push('stock wajib berupa bilangan bulat >= 0');
     }
+    if (typeof body.image !== 'string' || body.image.trim() === '') {
+        errors.push('Field image wajib diisi');
+    } else if (!/^[A-Za-z0-9+/]+={0,2}$/.test(body.image) || body.image.length % 4 !== 0) {
+        errors.push('Field image harus berupa Base64 yang valid');
+    } else {
+        const imageBuffer = Buffer.from(body.image, 'base64');
+        if (imageBuffer.toString('base64') !== body.image) {
+            errors.push('Field image harus berupa Base64 yang valid');
+        } else if (imageBuffer.length > 2 * 1024 * 1024) {
+            errors.push('Ukuran image maksimal 2 MB');
+        }
+    }
 
     return errors;
 }
@@ -29,7 +41,8 @@ function productPayload(body) {
         name: body.name.trim(),
         description: body.description == null ? null : String(body.description),
         price: body.price,
-        stock: body.stock
+        stock: body.stock,
+        image: body.image
     };
 }
 
