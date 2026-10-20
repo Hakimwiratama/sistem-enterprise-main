@@ -6,12 +6,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # jadi hostname DB harus nama service-nya di network Compose.
-      - DB_HOST=product-db
-      - DB_USER=appuser
-      - DB_PORT=3306
-      - DB_PASSWORD=password
-      - DB_NAME=productdb
+      DB_HOST: product-db
+      DB_USER: appuser
+      DB_PORT: 3306
+      DB_PASSWORD: password
+      DB_NAME: productdb
     depends_on:
       product-db:
         condition: service_healthy
@@ -100,7 +99,6 @@ services:
       MYSQL_USER: appuser
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: rootpassword
-
     volumes:
       - product-db-data:/var/lib/mysql
       - ./product-service/database/init.sql:/docker-entrypoint-initdb.d/init.sql
