@@ -1,0 +1,51 @@
+services:
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./.env.docker:/app/.env:ro
+    ports:
+      - "3003:3003"
+    environment:
+      APP_NAME: order-service
+      APP_ENV: local
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:3003
+      APP_KEY: ${ORDER_APP_KEY:-}
+      DB_CONNECTION: mysql
+      DB_HOST: order-db
+      DB_PORT: 3306
+      DB_DATABASE: ordersdb
+      DB_USERNAME: appuser
+      DB_PASSWORD: apppassword
+      CART_SERVICE_URL: http://host.docker.internal:3001
+      PRODUCT_SERVICE_URL: http://host.docker.internal:3000
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+      LOG_CHANNEL: stderr
+    depends_on:
+      order-db:
+        condition: service_healthy
+
+  order-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ordersdb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppassword
+      MYSQL_ROOT_PASSWORD: orderrootpassword
+    ports:
+      - "127.0.0.1:3308:3306"
+    volumes:
+      - order-service-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      retries: 5
+      start_period: 60s
+      timeout: 5s
+
+volumes:
+  order-service-mysql-data:
