@@ -88,6 +88,19 @@ class OrderController extends Controller
         }
     }
 
+    public function destroy(string $id): JsonResponse
+    {
+        try {
+            $this->orderService->delete((int) $id);
+
+            return response()->json(['message' => 'Pesanan berhasil dihapus']);
+        } catch (OrderNotFoundException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 404);
+        } catch (Throwable $exception) {
+            return $this->serverError($exception, 'menghapus pesanan');
+        }
+    }
+
     private function serviceUnavailable(ServiceUnavailableException $exception): JsonResponse
     {
         $message = $exception->serviceName === 'Cart'

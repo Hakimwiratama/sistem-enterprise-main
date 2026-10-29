@@ -59,11 +59,13 @@ tidak memerlukan database atau service eksternal yang sedang berjalan.
 | `GET` | `/orders/{id}` | Detail pesanan beserta item |
 | `GET` | `/orders/user/{userId}` | Daftar pesanan, terbaru dahulu; filter opsional `?status=PENDING` atau `?status=PAID` |
 | `PATCH` | `/orders/{id}/pay` | Simulasi pembayaran |
+| `DELETE` | `/orders/{id}` | Menghapus pesanan beserta item-itemnya secara permanen |
 
 Validasi body dan filter menghasilkan `422`, checkout yang tidak dapat dipenuhi
 menghasilkan `409`, service dependency yang bermasalah menghasilkan `503`,
 pesanan yang tidak ditemukan menghasilkan `404`, dan error tak terduga
-menghasilkan `500`. Detail teknis hanya disertakan saat `APP_DEBUG=true`.
+menghasilkan `500`. Hapus pesanan bersifat permanen; item-item pesanan ikut
+terhapus. Detail teknis hanya disertakan saat `APP_DEBUG=true`.
 Jika cart gagal dikosongkan setelah order tersimpan, order tetap berhasil
 dibuat dan kegagalan dicatat di log.
 

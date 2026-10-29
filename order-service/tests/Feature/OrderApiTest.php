@@ -217,6 +217,39 @@ class OrderApiTest extends TestCase
         $this->patchJson('/orders/abc/pay')->assertNotFound();
     }
 
+    public function test_deleting_order_removes_it_and_its_items_from_user_order_list(): void
+    {
+        $deletedOrder = Order::create(['user_id' => 7, 'status' => 'PENDING', 'total_amount' => 150000]);
+        $deletedOrder->items()->create([
+            'product_id' => 2,
+            'product_name' => 'Mouse Wireless',
+            'unit_price' => 150000,
+            'quantity' => 1,
+            'subtotal' => 150000,
+        ]);
+        $remainingOrder = Order::create(['user_id' => 7, 'status' => 'PENDING', 'total_amount' => 450000]);
+
+        $this->deleteJson("/orders/{$deletedOrder->id}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Pesanan berhasil dihapus');
+
+        $this->assertDatabaseMissing('orders', ['id' => $deletedOrder->id]);
+        $this->assertDatabaseMissing('order_items', ['order_id' => $deletedOrder->id]);
+        $this->getJson('/orders/user/7')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $remainingOrder->id);
+        $this->getJson("/orders/{$deletedOrder->id}")->assertNotFound();
+    }
+
+    public function test_deleting_missing_order_returns_not_found(): void
+    {
+        $this->deleteJson('/orders/999')
+            ->assertNotFound()
+            ->assertJsonPath('message', 'Pesanan dengan id 999 tidak ditemukan');
+        $this->deleteJson('/orders/abc')->assertNotFound();
+    }
+
     private function fakeCheckout(
         array $cartItems,
         array $products,

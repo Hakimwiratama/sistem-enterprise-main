@@ -114,4 +114,16 @@ class OrderService
             return $order->load('items');
         });
     }
+
+    public function delete(int $id): void
+    {
+        DB::transaction(function () use ($id): void {
+            $order = Order::query()->lockForUpdate()->find($id);
+            if (! $order) {
+                throw new OrderNotFoundException("Pesanan dengan id {$id} tidak ditemukan");
+            }
+
+            $order->delete();
+        });
+    }
 }
