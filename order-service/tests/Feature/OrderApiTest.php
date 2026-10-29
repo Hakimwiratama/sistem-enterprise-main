@@ -198,7 +198,7 @@ class OrderApiTest extends TestCase
 
         $this->getJson('/orders/user/7?status=SHIPPED')
             ->assertUnprocessable()
-            ->assertJsonPath('errors.status.0', 'Status harus PENDING atau PAID');
+            ->assertJsonPath('errors.status.0', 'Status harus PENDING, PAID, atau CANCELLED');
         $this->getJson('/orders/user/7?status=PENDING')
             ->assertOk()
             ->assertJsonCount(1, 'data');
@@ -215,6 +215,50 @@ class OrderApiTest extends TestCase
         $this->patchJson("/orders/{$order->id}/pay")->assertConflict();
         $this->patchJson('/orders/999/pay')->assertNotFound();
         $this->patchJson('/orders/abc/pay')->assertNotFound();
+    }
+
+    public function test_pending_order_can_be_cancelled_once(): void
+    {
+        $order = Order::create(['user_id' => 7, 'status' => 'PENDING', 'total_amount' => 150000]);
+        $order->items()->create([
+            'product_id' => 2,
+            'product_name' => 'Mouse Wireless',
+            'unit_price' => 150000,
+            'quantity' => 1,
+            'subtotal' => 150000,
+        ]);
+
+        $this->putJson("/orders/{$order->id}/cancel")
+            ->assertOk()
+            ->assertJsonPath('message', 'Pesanan berhasil dibatalkan')
+            ->assertJsonPath('data.status', 'CANCELLED')
+            ->assertJsonPath('data.items.0.product_name', 'Mouse Wireless');
+
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'CANCELLED']);
+        $this->getJson('/orders/user/7?status=CANCELLED')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $order->id);
+        $this->putJson("/orders/{$order->id}/cancel")->assertConflict();
+        $this->patchJson("/orders/{$order->id}/pay")->assertConflict();
+    }
+
+    public function test_cancelling_missing_order_returns_not_found(): void
+    {
+        $this->putJson('/orders/999/cancel')
+            ->assertNotFound()
+            ->assertJsonPath('message', 'Pesanan dengan id 999 tidak ditemukan');
+        $this->putJson('/orders/abc/cancel')->assertNotFound();
+    }
+
+    public function test_paid_order_cannot_be_cancelled(): void
+    {
+        $order = Order::create(['user_id' => 7, 'status' => 'PAID', 'total_amount' => 150000]);
+
+        $this->putJson("/orders/{$order->id}/cancel")
+            ->assertConflict()
+            ->assertJsonPath('message', 'Hanya pesanan berstatus PENDING yang dapat dibatalkan');
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'PAID']);
     }
 
     public function test_deleting_order_removes_it_and_its_items_from_user_order_list(): void

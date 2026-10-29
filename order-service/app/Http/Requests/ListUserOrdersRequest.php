@@ -16,14 +16,14 @@ class ListUserOrdersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'string', 'in:PENDING,PAID'],
+            'status' => ['sometimes', 'string', 'in:PENDING,PAID,CANCELLED'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'status.in' => 'Status harus PENDING atau PAID',
+            'status.in' => 'Status harus PENDING, PAID, atau CANCELLED',
             'status.string' => 'Status harus berupa teks',
         ];
     }

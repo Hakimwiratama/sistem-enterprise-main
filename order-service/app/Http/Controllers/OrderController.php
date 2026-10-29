@@ -88,6 +88,22 @@ class OrderController extends Controller
         }
     }
 
+    public function cancel(string $id): JsonResponse
+    {
+        try {
+            return response()->json([
+                'message' => 'Pesanan berhasil dibatalkan',
+                'data' => $this->orderData($this->orderService->cancel((int) $id)),
+            ]);
+        } catch (OrderNotFoundException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 404);
+        } catch (CheckoutConflictException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 409);
+        } catch (Throwable $exception) {
+            return $this->serverError($exception, 'membatalkan pesanan');
+        }
+    }
+
     public function destroy(string $id): JsonResponse
     {
         try {

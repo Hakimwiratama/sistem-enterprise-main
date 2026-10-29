@@ -115,6 +115,24 @@ class OrderService
         });
     }
 
+    public function cancel(int $id): Order
+    {
+        return DB::transaction(function () use ($id): Order {
+            $order = Order::query()->lockForUpdate()->find($id);
+            if (! $order) {
+                throw new OrderNotFoundException("Pesanan dengan id {$id} tidak ditemukan");
+            }
+
+            if ($order->status !== 'PENDING') {
+                throw new CheckoutConflictException('Hanya pesanan berstatus PENDING yang dapat dibatalkan');
+            }
+
+            $order->update(['status' => 'CANCELLED']);
+
+            return $order->load('items');
+        });
+    }
+
     public function delete(int $id): void
     {
         DB::transaction(function () use ($id): void {

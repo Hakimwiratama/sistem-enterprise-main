@@ -57,15 +57,18 @@ tidak memerlukan database atau service eksternal yang sedang berjalan.
 | `GET` | `/health` | Status layanan |
 | `POST` | `/orders` | Checkout; body: `{"user_id": 7}` |
 | `GET` | `/orders/{id}` | Detail pesanan beserta item |
-| `GET` | `/orders/user/{userId}` | Daftar pesanan, terbaru dahulu; filter opsional `?status=PENDING` atau `?status=PAID` |
+| `GET` | `/orders/user/{userId}` | Daftar pesanan, terbaru dahulu; filter opsional `?status=PENDING`, `?status=PAID`, atau `?status=CANCELLED` |
 | `PATCH` | `/orders/{id}/pay` | Simulasi pembayaran |
+| `PUT` | `/orders/{id}/cancel` | Membatalkan pesanan berstatus `PENDING` |
 | `DELETE` | `/orders/{id}` | Menghapus pesanan beserta item-itemnya secara permanen |
 
 Validasi body dan filter menghasilkan `422`, checkout yang tidak dapat dipenuhi
 menghasilkan `409`, service dependency yang bermasalah menghasilkan `503`,
 pesanan yang tidak ditemukan menghasilkan `404`, dan error tak terduga
-menghasilkan `500`. Hapus pesanan bersifat permanen; item-item pesanan ikut
-terhapus. Detail teknis hanya disertakan saat `APP_DEBUG=true`.
+menghasilkan `500`. Hanya pesanan `PENDING` yang dapat dibatalkan; pembatalan
+mengubah status menjadi `CANCELLED` tanpa menghapus order atau itemnya. Hapus
+pesanan bersifat permanen dan item-itemnya ikut terhapus. Detail teknis hanya
+disertakan saat `APP_DEBUG=true`.
 Jika cart gagal dikosongkan setelah order tersimpan, order tetap berhasil
 dibuat dan kegagalan dicatat di log.
 
