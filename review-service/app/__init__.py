@@ -4,6 +4,7 @@ import traceback
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify
+from flask_cors import CORS
 
 from app.database import init_db
 from app.exceptions import (
@@ -26,6 +27,15 @@ def create_app():
         "true",
         "yes",
     }
+    allowed_origins = [
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ALLOWED_ORIGINS",
+            "http://localhost:5173,http://127.0.0.1:5173",
+        ).split(",")
+        if origin.strip()
+    ]
+    CORS(app, resources={r"/.*": {"origins": allowed_origins}})
     init_db()
     app.register_blueprint(review_bp)
 
