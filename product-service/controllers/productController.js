@@ -1,135 +1,94 @@
 const productModel = require('../models/productModel');
+const crypto = require('node:crypto');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const { canManageProduct } = require('../middleware/productAuthorization');
 
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const UPLOAD_DIRECTORY = process.env.PRODUCT_UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
 
 function parseId(value) {
     const id = Number(value);
     return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-function validateImage(value) {
-    if (typeof value !== 'string' || value.trim() === '') {
-        return {
-            error: 'Field image wajib diisi',
-            base64: null
-        };
-    }
-
-    let base64 = value.trim();
-    let declaredMimeType = null;
-
-    if (base64.startsWith('data:')) {
-        const dataUriMatch = base64.match(
-            /^data:(image\/(?:png|jpeg));base64,(.*)$/i
-        );
-
-        if (!dataUriMatch) {
-            return {
-                error: 'Field image harus berupa Base64 yang valid',
-                base64: null
-            };
-        }
-
-        declaredMimeType = dataUriMatch[1].toLowerCase();
-        base64 = dataUriMatch[2];
-    }
-
-    const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
-    const decodedSize = Math.floor((base64.length * 3) / 4) - padding;
-
-    if (decodedSize > MAX_IMAGE_SIZE) {
-        return {
-            error: 'Ukuran image maksimal 2 MB',
-            base64: null
-        };
-    }
-
-    const base64Pattern =
-        /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-
-    if (!base64 || !base64Pattern.test(base64)) {
-        return {
-            error: 'Field image harus berupa Base64 yang valid',
-            base64: null
-        };
-    }
-
-    const imageBuffer = Buffer.from(base64, 'base64');
-
-    if (imageBuffer.toString('base64') !== base64) {
-        return {
-            error: 'Field image harus berupa Base64 yang valid',
-            base64: null
-        };
-    }
-
-    const isPng =
-        imageBuffer.length >= 8 &&
-        imageBuffer.subarray(0, 8).equals(
-            Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-        );
-    const isJpeg =
-        imageBuffer.length >= 3 &&
-        imageBuffer[0] === 0xff &&
-        imageBuffer[1] === 0xd8 &&
-        imageBuffer[2] === 0xff;
-
-    if (!isPng && !isJpeg) {
-        return {
-            error: 'Format image harus berupa PNG atau JPEG',
-            base64: null
-        };
-    }
-
+function detectImageType(buffer) {
     if (
-        (declaredMimeType === 'image/png' && !isPng) ||
-        (declaredMimeType === 'image/jpeg' && !isJpeg)
-    ) {
-        return {
-            error: 'Tipe image tidak sesuai dengan isi file',
-            base64: null
-        };
+        buffer.length >= 8 &&
+        buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    ) return { mime: 'image/png', extension: 'png' };
+    if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+        return { mime: 'image/jpeg', extension: 'jpg' };
+    }
+    if (
+        buffer.length >= 12 &&
+        buffer.toString('ascii', 0, 4) === 'RIFF' &&
+        buffer.toString('ascii', 8, 12) === 'WEBP'
+    ) return { mime: 'image/webp', extension: 'webp' };
+    return null;
+}
+
+async function saveImage(file) {
+    if (!file) return null;
+    const detected = detectImageType(file.buffer);
+    if (!detected || file.mimetype !== detected.mime) {
+        const error = new Error('Isi foto tidak sesuai dengan format JPG, PNG, atau WEBP');
+        error.status = 400;
+        throw error;
     }
 
-    return {
-        error: null,
-        base64
-    };
+    await fs.mkdir(UPLOAD_DIRECTORY, { recursive: true });
+    const filename = `${crypto.randomUUID()}.${detected.extension}`;
+    await fs.writeFile(path.join(UPLOAD_DIRECTORY, filename), file.buffer, { flag: 'wx' });
+    return `/uploads/${filename}`;
+}
+
+async function removeImage(image) {
+    if (typeof image !== 'string') return;
+    const match = /^\/uploads\/([a-f0-9-]+)\.(png|jpg|webp)$/.exec(image);
+    if (!match) return;
+    await fs.unlink(path.join(UPLOAD_DIRECTORY, path.basename(image))).catch((error) => {
+        if (error.code !== 'ENOENT') throw error;
+    });
 }
 
 function validateProduct(body) {
     body = body || {};
-    const { name, price, stock } = body;
     const errors = [];
-    const imageResult = validateImage(body.image);
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const category = typeof body.category === 'string' ? body.category.trim() : '';
+    const description = typeof body.description === 'string' ? body.description.trim() : '';
+    const price = typeof body.price === 'number' || typeof body.price === 'string'
+        ? Number(body.price)
+        : NaN;
+    const stock = typeof body.stock === 'number' || typeof body.stock === 'string'
+        ? Number(body.stock)
+        : NaN;
 
-    if (typeof name !== 'string' || name.trim() === '') {
-        errors.push('name wajib berupa teks dan tidak boleh kosong');
+    if (!name || name.length > 150) {
+        errors.push('name wajib diisi dan maksimal 150 karakter');
     }
-    if (typeof price !== 'number' || !Number.isFinite(price) || price < 0) {
+    if (
+        !Number.isFinite(price) ||
+        price < 0 ||
+        price > 9999999999.99 ||
+        !/^\d+(?:\.\d{1,2})?$/.test(String(body.price))
+    ) {
         errors.push('price wajib berupa angka >= 0');
     }
-    if (!Number.isInteger(stock) || stock < 0) {
+    if (!Number.isInteger(stock) || stock < 0 || stock > 4294967295) {
         errors.push('stock wajib berupa bilangan bulat >= 0');
     }
-    if (imageResult.error) {
-        errors.push(imageResult.error);
+    if (!category || category.length > 100) {
+        errors.push('category wajib diisi dan maksimal 100 karakter');
     }
+    if (typeof body.description !== 'undefined' && typeof body.description !== 'string') {
+        errors.push('description harus berupa teks');
+    }
+    if (description.length > 65535) errors.push('description maksimal 65535 karakter');
 
     return {
         errors,
-        image: imageResult.base64
-    };
-}
-
-function productPayload(body, image) {
-    body = body || {};
-    return {
-        name: body.name.trim(),
-        description: body.description == null ? null : String(body.description),
-        price: body.price,
-        stock: body.stock,
-        image
+        product: { name, description: description || null, price, stock, category }
     };
 }
 
@@ -159,6 +118,7 @@ async function show(req, res) {
 
 async function store(req, res) {
     const validation = validateProduct(req.body);
+    if (!req.file) validation.errors.push('Foto produk wajib diunggah');
     if (validation.errors.length) {
         return res.status(400).json({
             message: 'Data product tidak valid',
@@ -166,14 +126,23 @@ async function store(req, res) {
         });
     }
 
+    let image;
     try {
-        const product = await productModel.createProduct(
-            productPayload(req.body, validation.image)
-        );
+        image = await saveImage(req.file);
+        const product = await productModel.createProduct({
+            ...validation.product,
+            image,
+            seller_id: req.user.id
+        });
         res.status(201).json({ message: 'Product berhasil dibuat', data: product });
     } catch (error) {
+        if (image) await removeImage(image).catch((cleanupError) => {
+            console.error('Failed to clean up uploaded product image:', cleanupError);
+        });
         console.error('Failed to create product:', error);
-        res.status(500).json({ message: 'Gagal membuat product' });
+        res.status(error.status || 500).json({
+            message: error.status ? error.message : 'Gagal membuat product'
+        });
     }
 }
 
@@ -192,15 +161,34 @@ async function update(req, res) {
     try {
         const existing = await productModel.getProductById(id);
         if (!existing) return res.status(404).json({ message: 'Product tidak ditemukan' });
+        if (!canManageProduct(req.user, existing)) {
+            return res.status(403).json({ message: 'Anda hanya dapat mengubah produk milik sendiri' });
+        }
 
-        const product = await productModel.updateProduct(
-            id,
-            productPayload(req.body, validation.image)
-        );
+        const image = req.file ? await saveImage(req.file) : existing.image;
+        let product;
+        try {
+            product = await productModel.updateProduct(id, {
+                ...validation.product,
+                image
+            });
+        } catch (error) {
+            if (req.file) await removeImage(image).catch((cleanupError) => {
+                console.error('Failed to clean up uploaded product image:', cleanupError);
+            });
+            throw error;
+        }
+        if (req.file && existing.image !== image) {
+            await removeImage(existing.image).catch((error) => {
+                console.error('Failed to remove replaced product image:', error);
+            });
+        }
         res.status(200).json({ message: 'Product berhasil diubah', data: product });
     } catch (error) {
         console.error('Failed to update product:', error);
-        res.status(500).json({ message: 'Gagal mengubah product' });
+        res.status(error.status || 500).json({
+            message: error.status ? error.message : 'Gagal mengubah product'
+        });
     }
 }
 
@@ -209,8 +197,17 @@ async function destroy(req, res) {
     if (!id) return res.status(400).json({ message: 'ID product tidak valid' });
 
     try {
+        const existing = await productModel.getProductById(id);
+        if (!existing) return res.status(404).json({ message: 'Product tidak ditemukan' });
+        if (!canManageProduct(req.user, existing)) {
+            return res.status(403).json({ message: 'Anda hanya dapat menghapus produk milik sendiri' });
+        }
         const deleted = await productModel.deleteProduct(id);
-        if (!deleted) return res.status(404).json({ message: 'Product tidak ditemukan' });
+        if (deleted) {
+            await removeImage(existing.image).catch((error) => {
+                console.error('Failed to remove deleted product image:', error);
+            });
+        }
         res.status(200).json({ message: 'Product berhasil dihapus' });
     } catch (error) {
         console.error('Failed to delete product:', error);

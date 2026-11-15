@@ -118,6 +118,8 @@ di-commit.
 | `PRODUCT_SERVICE_URL` | Order, Review | `http://product-service:3000` |
 | `SESSION_DRIVER`, `CACHE_STORE`, `QUEUE_CONNECTION`, `LOG_CHANNEL` | Cart, Order | `file`, `file`, `sync`, `stderr` |
 | `DB_HOST`, `DB_USER`, `DB_PORT`, `DB_PASSWORD`, `DB_NAME` | Product | `product-db`, `appuser`, `3306`, `password`, `productdb` |
+| `PRODUCT_JWT_SECRET` | Product | Wajib untuk operasi tulis; rahasia HS256 minimal 32 byte, jangan di-commit |
+| `PRODUCT_JWT_ISSUER`, `PRODUCT_JWT_AUDIENCE` | Product | Opsional, untuk membatasi issuer dan audience JWT |
 | `HOST`, `PORT`, `FLASK_DEBUG`, `MONGO_URI`, `MONGO_DB_NAME` | Review | `0.0.0.0`, `3002`, `0`, URL internal Compose, `reviewdb` |
 | `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` | Order/Product DB | nilai development pada `docker-compose.yml` |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Cart DB | nilai development pada `docker-compose.yml` |

@@ -16,19 +16,25 @@ export const services = {
   order: import.meta.env.VITE_ORDER_API_URL || 'http://localhost:3003',
 }
 
-export async function request(baseUrl, path, { method = 'GET', body } = {}) {
+export async function request(baseUrl, path, {
+  method = 'GET',
+  body,
+  token,
+} = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
   const url = `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
 
   try {
     const response = await fetch(url, {
       method,
       headers: {
         Accept: 'application/json',
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body !== undefined && !isFormData ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,
       signal: controller.signal,
     })
 

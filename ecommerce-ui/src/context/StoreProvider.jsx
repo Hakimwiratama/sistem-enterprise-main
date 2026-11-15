@@ -3,6 +3,7 @@ import useCart from '../hooks/useCart.js'
 import useOrders from '../hooks/useOrders.js'
 import useProducts from '../hooks/useProducts.js'
 import { formatError } from '../utils/format.js'
+import { decodeAccessToken } from '../utils/auth.js'
 import StoreContext from './storeContext.js'
 
 const DEFAULT_USER_ID = 1
@@ -16,6 +17,9 @@ function readUserId() {
 
 export default function StoreProvider({ children }) {
   const [userId, setUserId] = useState(readUserId)
+  const [accessToken, setAccessToken] = useState(
+    () => window.sessionStorage.getItem('serambi-access-token') ?? '',
+  )
   const [notice, setNotice] = useState(null)
   const [busyActions, setBusyActions] = useState({})
   const products = useProducts()
@@ -30,6 +34,13 @@ export default function StoreProvider({ children }) {
 
     window.localStorage.setItem('serambi-user-id', String(nextUserId))
     setUserId(nextUserId)
+  }, [])
+
+  const saveAccessToken = useCallback((value) => {
+    const token = value.trim()
+    if (token) window.sessionStorage.setItem('serambi-access-token', token)
+    else window.sessionStorage.removeItem('serambi-access-token')
+    setAccessToken(token)
   }, [])
 
   const runAction = useCallback(async (key, operation, successMessage) => {
@@ -62,6 +73,9 @@ export default function StoreProvider({ children }) {
   const value = {
     userId,
     changeUserId,
+    accessToken,
+    accessClaims: decodeAccessToken(accessToken),
+    saveAccessToken,
     products,
     cart,
     cartQuantity,

@@ -1,3 +1,5 @@
+import { services } from '../api/http.js'
+
 const rupiahFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
   currency: 'IDR',
@@ -39,7 +41,12 @@ export function formatError(error) {
 
 export function getImageSource(image) {
   if (typeof image !== 'string' || image.trim() === '') return ''
-  if (image.startsWith('data:image/')) return image
-  const mimeType = image.startsWith('iVBOR') ? 'image/png' : 'image/jpeg'
+  if (/^https?:\/\//i.test(image) || image.startsWith('data:image/')) return image
+  if (image.startsWith('/')) return new URL(image, services.product).toString()
+  const mimeType = image.startsWith('iVBOR')
+    ? 'image/png'
+    : image.startsWith('UklGR')
+      ? 'image/webp'
+      : 'image/jpeg'
   return `data:${mimeType};base64,${image}`
 }

@@ -12,20 +12,20 @@ async function getProductById(id) {
 
 //simpan product ke database
 async function createProduct(product) {
-    const { name, description, price, stock, image } = product;
+    const { name, description, price, stock, image, category, seller_id } = product;
     const [result] = await pool.query(
-        'INSERT INTO products (name, description, price, stock, image) VALUES (?, ?, ?, ?, ?)',
-        [name, description, price, stock, image]
+        'INSERT INTO products (name, description, price, stock, image, category, seller_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, description, price, stock, image, category, seller_id]
     );
     return getProductById(result.insertId);
 }
 
 //update product berdasarkan id
 async function updateProduct(id, product) {
-    const { name, description, price, stock, image } = product;
+    const { name, description, price, stock, image, category } = product;
     await pool.query(
-        'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, image = ? WHERE id = ?',
-        [name, description, price, stock, image, id]
+        'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, image = ?, category = ? WHERE id = ?',
+        [name, description, price, stock, image, category, id]
     );
     return getProductById(id);
 }

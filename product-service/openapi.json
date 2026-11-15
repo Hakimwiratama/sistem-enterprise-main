@@ -57,18 +57,12 @@
       },
       "post": {
         "summary": "Create a product",
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/ProductInput" },
-              "example": {
-                "name": "Tas Laptop",
-                "description": "Tas laptop tahan air",
-                "price": 185000,
-                "stock": 30,
-                "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg=="
-              }
+            "multipart/form-data": {
+              "schema": { "$ref": "#/components/schemas/ProductCreateInput" }
             }
           }
         },
@@ -83,6 +77,8 @@
           },
           "400": { "$ref": "#/components/responses/ValidationError" },
           "413": { "$ref": "#/components/responses/PayloadTooLarge" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
@@ -115,10 +111,11 @@
       },
       "put": {
         "summary": "Replace a product",
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": { "$ref": "#/components/schemas/ProductInput" }
             }
           }
@@ -135,11 +132,14 @@
           "400": { "$ref": "#/components/responses/ValidationError" },
           "404": { "$ref": "#/components/responses/NotFound" },
           "413": { "$ref": "#/components/responses/PayloadTooLarge" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       },
       "delete": {
         "summary": "Delete a product",
+        "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
             "description": "Product deleted",
@@ -151,41 +151,62 @@
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
           "404": { "$ref": "#/components/responses/NotFound" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "schemas": {
       "ProductInput": {
         "type": "object",
-        "required": ["name", "price", "stock", "image"],
+        "required": ["name", "price", "stock", "category"],
         "properties": {
-          "name": { "type": "string", "example": "Tas Laptop" },
+          "name": { "type": "string", "maxLength": 150, "example": "Tas Laptop" },
           "description": { "type": "string", "nullable": true },
           "price": { "type": "number", "minimum": 0, "example": 185000 },
           "stock": { "type": "integer", "minimum": 0, "example": 30 },
+          "category": { "type": "string", "maxLength": 100, "example": "Aksesori" },
           "image": {
             "type": "string",
-            "description": "Base64-encoded PNG or JPEG image, up to 2 MB. A data URI is also accepted."
+            "format": "binary",
+            "description": "JPG/JPEG, PNG, or WEBP file up to 5 MB. Optional on PUT to keep the current image."
           }
         }
       },
-      "Product": {
+      "ProductCreateInput": {
         "allOf": [
           { "$ref": "#/components/schemas/ProductInput" },
           {
             "type": "object",
-            "required": ["id", "created_at", "updated_at"],
-            "properties": {
-              "id": { "type": "integer" },
-              "price": { "type": "string", "example": "185000.00" },
-              "created_at": { "type": "string", "format": "date-time" },
-              "updated_at": { "type": "string", "format": "date-time" }
-            }
+            "required": ["image"]
           }
         ]
+      },
+      "Product": {
+        "type": "object",
+        "required": ["id", "name", "price", "stock", "image", "category", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string", "example": "Tas Laptop" },
+          "description": { "type": "string", "nullable": true },
+          "price": { "type": "string", "example": "185000.00" },
+          "stock": { "type": "integer", "example": 30 },
+          "category": { "type": "string", "example": "Aksesori" },
+          "image": { "type": "string", "example": "/uploads/00000000-0000-4000-8000-000000000000.jpg" },
+          "seller_id": { "type": "string", "nullable": true, "example": "seller-1" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
       },
       "ProductResponse": {
         "type": "object",
@@ -224,7 +245,7 @@
         }
       },
       "PayloadTooLarge": {
-        "description": "Request body exceeds the 4 MB limit",
+        "description": "Uploaded photo exceeds the 5 MB limit",
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ErrorResponse" }
@@ -241,6 +262,22 @@
       },
       "ServerError": {
         "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "A valid bearer token is required",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The user role or product ownership does not allow this action",
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ErrorResponse" }

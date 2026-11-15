@@ -7,6 +7,8 @@ import CartPage from './pages/CartPage.jsx'
 import OrdersPage from './pages/OrdersPage.jsx'
 import ProductDetailPage from './pages/ProductDetailPage.jsx'
 import ProductListPage from './pages/ProductListPage.jsx'
+import ProductManagementPage from './pages/ProductManagementPage.jsx'
+import ProductFormPage from './pages/ProductFormPage.jsx'
 import StartingPage from './pages/StartingPage.jsx'
 
 function Toast() {
@@ -48,6 +50,9 @@ function Storefront() {
         <Routes>
           <Route path="/" element={<ProductListPage />} />
           <Route path="/products/:productId" element={<ProductDetailPage />} />
+          <Route path="/manage/products" element={<ProductManagementPage />} />
+          <Route path="/manage/products/new" element={<ProductFormPage />} />
+          <Route path="/manage/products/:productId/edit" element={<ProductFormPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="*" element={<StartingPage />} />

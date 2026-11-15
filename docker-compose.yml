@@ -11,6 +11,12 @@ services:
       DB_PORT: 3306
       DB_PASSWORD: password
       DB_NAME: productdb
+      PRODUCT_UPLOAD_DIR: /app/uploads
+      JWT_SECRET: ${PRODUCT_JWT_SECRET:-}
+      JWT_ISSUER: ${PRODUCT_JWT_ISSUER:-}
+      JWT_AUDIENCE: ${PRODUCT_JWT_AUDIENCE:-}
+    volumes:
+      - product-image-data:/app/uploads
     depends_on:
       product-db:
         condition: service_healthy
@@ -167,9 +173,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 60s
 
 volumes:
   order-mysql-data:
   cart-db-data:
   review-db-data:
   product-db-data:
+  product-image-data:

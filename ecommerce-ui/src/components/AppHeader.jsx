@@ -1,8 +1,10 @@
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import useStore from '../context/useStore.js'
 
 const USER_OPTIONS = [1, 2, 3, 4, 5]
 
 export default function AppHeader({ cartQuantity, userId, onUserChange }) {
+  const { accessClaims } = useStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
@@ -56,6 +58,11 @@ export default function AppHeader({ cartQuantity, userId, onUserChange }) {
           <NavLink className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`} to="/orders">
             Pesanan
           </NavLink>
+          {['admin', 'seller'].includes(accessClaims?.role) && (
+            <NavLink className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`} to="/manage/products">
+              Kelola
+            </NavLink>
+          )}
           <NavLink
             className={({ isActive }) => `cart-link ${isActive ? 'is-active' : ''}`}
             to="/cart"
