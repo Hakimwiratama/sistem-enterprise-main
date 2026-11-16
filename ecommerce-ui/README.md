@@ -1,4 +1,4 @@
-# Serambi — E-commerce UI
+# Toko Hakim — E-commerce UI
 
 React storefront for the Product, Cart, Review, and Order services in this
 repository. The app follows the UI integration guide's API, hook, component,

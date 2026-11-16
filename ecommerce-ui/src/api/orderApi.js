@@ -32,4 +32,10 @@ export const orderApi = {
     })
     return getData(payload, isRecord, 'Order Service')
   },
+
+  async delete(orderId) {
+    return request(services.order, `/orders/${orderId}`, {
+      method: 'DELETE',
+    })
+  },
 }

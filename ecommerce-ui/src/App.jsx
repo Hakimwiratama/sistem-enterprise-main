@@ -60,11 +60,11 @@ function Storefront() {
       </main>
       <footer className="site-footer">
         <Link className="brand footer-brand" to="/">
-          <span className="brand-mark">s</span>
-          <span>serambi<span className="brand-period">.</span></span>
+          <span className="brand-mark">H</span>
+          <span>Toko Hakim<span className="brand-period">.</span></span>
         </Link>
         <p>Menemukan hal baik, untuk keseharian yang lebih berarti.</p>
-        <span className="footer-copy">© 2026 Serambi. Dibuat dengan hati <b>♡</b></span>
+        <span className="footer-copy">© 2026 Toko Hakim. Dibuat dengan hati <b>♡</b></span>
       </footer>
       <Toast />
     </div>

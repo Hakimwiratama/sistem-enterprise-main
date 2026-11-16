@@ -13,30 +13,38 @@ const FILTERS = [
 export default function ProductListPage() {
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState('newest')
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const search = searchParams.get('q') ?? ''
   const { products, cart, runAction, busyActions } = useStore()
 
-  const visibleProducts = useMemo(() => {
+  const { visibleProducts, searchHasNoMatches } = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('id-ID')
-    return products.data
+    const searchResults = products.data.filter((product) => !query
+      || `${product.name} ${product.description ?? ''}`
+        .toLocaleLowerCase('id-ID')
+        .includes(query))
+    const searchHasNoMatches = Boolean(query) && searchResults.length === 0
+    const matchingProducts = (searchHasNoMatches ? products.data : searchResults)
       .filter((product) => {
-        const matchesSearch = !query
-          || `${product.name} ${product.description ?? ''}`
-            .toLocaleLowerCase('id-ID')
-            .includes(query)
         const stock = Number(product.stock)
-        const matchesFilter = filter === 'all'
+        return filter === 'all'
           || (filter === 'available' && stock > 0)
           || (filter === 'low-stock' && stock > 0 && stock <= 5)
-        return matchesSearch && matchesFilter
       })
       .sort((first, second) => {
         if (sort === 'price-low') return Number(first.price) - Number(second.price)
         if (sort === 'price-high') return Number(second.price) - Number(first.price)
         return new Date(second.created_at ?? 0) - new Date(first.created_at ?? 0)
       })
+
+    return { visibleProducts: matchingProducts, searchHasNoMatches }
   }, [filter, products.data, search, sort])
+
+  function clearSearch() {
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('q')
+    setSearchParams(nextParams, { replace: true })
+  }
 
   async function addToCart(product) {
     const quantityInCart = cart.data.items
@@ -74,19 +82,8 @@ export default function ProductListPage() {
             <span>Dikurasi dengan hati<br /><strong>untuk sehari-hari.</strong></span>
           </div>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="art-sun" />
-          <div className="art-orbit orbit-one" />
-          <div className="art-orbit orbit-two" />
-          <div className="art-product">
-            <div className="art-product-top" />
-            <div className="art-product-body"><span>everyday<br />essentials</span></div>
-            <div className="art-product-handle" />
-          </div>
-          <div className="art-flower flower-one">✳</div>
-          <div className="art-flower flower-two">✿</div>
-          <div className="art-caption">benda baik,<br />hari baik.</div>
-          <div className="art-sticker">01<br /><span>serambi</span></div>
+        <div className="hero-art">
+          <img src="/hero-products.png" alt="Koleksi aksesori komputer dan perangkat kerja" />
         </div>
         <div className="hero-index">01 <span>/</span> 03</div>
       </section>
@@ -145,23 +142,36 @@ export default function ProductListPage() {
           label="katalog"
         >
           {visibleProducts.length ? (
-            <div className="product-grid">
-              {visibleProducts.map((product, index) => {
-                const quantityInCart = cart.data.items
-                  .filter((item) => Number(item.product_id) === Number(product.id))
-                  .reduce((total, item) => total + Number(item.quantity), 0)
-                return (
-                  <ProductCard
-                    product={product}
-                    index={index}
-                    quantityInCart={quantityInCart}
-                    busy={Boolean(busyActions[`add-${product.id}`])}
-                    onAdd={addToCart}
-                    key={product.id}
-                  />
-                )
-              })}
-            </div>
+            <>
+              {searchHasNoMatches && (
+                <div className="inline-alert" role="status">
+                  <div>
+                    <strong>Tidak ada produk yang cocok dengan pencarian.</strong>
+                    <span>Semua produk tetap ditampilkan.</span>
+                  </div>
+                  <button type="button" className="button button-outline" onClick={clearSearch}>
+                    Hapus pencarian
+                  </button>
+                </div>
+              )}
+              <div className="product-grid">
+                {visibleProducts.map((product, index) => {
+                  const quantityInCart = cart.data.items
+                    .filter((item) => Number(item.product_id) === Number(product.id))
+                    .reduce((total, item) => total + Number(item.quantity), 0)
+                  return (
+                    <ProductCard
+                      product={product}
+                      index={index}
+                      quantityInCart={quantityInCart}
+                      busy={Boolean(busyActions[`add-${product.id}`])}
+                      onAdd={addToCart}
+                      key={product.id}
+                    />
+                  )
+                })}
+              </div>
+            </>
           ) : (
             <div className="empty-state product-empty">
               <span className="empty-icon">⌕</span>

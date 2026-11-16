@@ -32,8 +32,8 @@ export default function AppHeader({ cartQuantity, userId, onUserChange }) {
 
       <header className="site-header">
         <Link className="brand" to="/" aria-label="Kembali ke beranda">
-          <span className="brand-mark">s</span>
-          <span>serambi<span className="brand-period">.</span></span>
+          <span className="brand-mark">H</span>
+          <span>Toko Hakim<span className="brand-period">.</span></span>
         </Link>
 
         <label className="search-box">

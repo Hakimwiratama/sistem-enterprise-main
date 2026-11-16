@@ -58,7 +58,7 @@ export default function ProductDetailPage() {
                   : <span aria-hidden="true">✳</span>}
               </div>
               <div className="detail-copy">
-                <span className="section-kicker">PILIHAN SERAMBI</span>
+                <span className="section-kicker">PILIHAN TOKO HAKIM</span>
                 <h1>{product.data.name}</h1>
                 <strong className="detail-price">{formatPrice(product.data.price)}</strong>
                 <p>{product.data.description || 'Barang pilihan untuk menemani kebutuhan sehari-hari.'}</p>
@@ -93,7 +93,7 @@ export default function ProductDetailPage() {
                   <span className="section-kicker">CERITA DARI PEMBELI</span>
                   <h2>Ulasan pilihan.</h2>
                 </div>
-                <span>{reviews.data.summary.total_reviews} ulasan</span>
+                <span>{reviews.data.summary.total_reviews} orang memberi nilai</span>
               </div>
               <AsyncView
                 loading={reviews.loading}

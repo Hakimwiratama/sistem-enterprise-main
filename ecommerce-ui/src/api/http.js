@@ -10,10 +10,10 @@ export class ApiError extends Error {
 }
 
 export const services = {
-  product: import.meta.env.VITE_PRODUCT_API_URL || 'http://localhost:3000',
-  cart: import.meta.env.VITE_CART_API_URL || 'http://localhost:3001',
-  review: import.meta.env.VITE_REVIEW_API_URL || 'http://localhost:3002',
-  order: import.meta.env.VITE_ORDER_API_URL || 'http://localhost:3003',
+  product: `${window.location.origin}/api/product`,
+  cart: `${window.location.origin}/api/cart`,
+  review: `${window.location.origin}/api/review`,
+  order: `${window.location.origin}/api/order`,
 }
 
 export async function request(baseUrl, path, {

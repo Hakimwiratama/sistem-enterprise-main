@@ -17,7 +17,8 @@ export default function useOrders(userId) {
 
   const pay = useCallback((orderId) => orderApi.pay(orderId), [])
   const cancel = useCallback((orderId) => orderApi.cancel(orderId), [])
+  const remove = useCallback((orderId) => orderApi.delete(orderId), [])
   const get = useCallback((orderId) => orderApi.get(orderId), [])
 
-  return { ...orders, reload, checkout, pay, cancel, get }
+  return { ...orders, reload, checkout, pay, cancel, remove, get }
 }

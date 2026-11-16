@@ -100,6 +100,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
+    environment:
+      VITE_PRODUCT_API_URL: http://product-service:3000
+      VITE_CART_API_URL: http://cart-service:3001
+      VITE_REVIEW_API_URL: http://review-service:3002
+      VITE_ORDER_API_URL: http://order-service:3003
     depends_on:
       - product-service
       - cart-service

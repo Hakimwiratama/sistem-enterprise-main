@@ -43,6 +43,23 @@ export default function OrdersPage() {
     )
   }
 
+  async function deleteOrder(order) {
+    const confirmed = window.confirm(
+      `Hapus pesanan #${order.id}? Pesanan yang dihapus tidak dapat dikembalikan.`,
+    )
+    if (!confirmed) return
+
+    await runAction(
+      `delete-${order.id}`,
+      async () => {
+        const result = await orders.remove(order.id)
+        await orders.reload()
+        return result
+      },
+      'Pesanan berhasil dihapus.',
+    )
+  }
+
   return (
     <section className="page-section">
       <div className="page-title">
@@ -119,6 +136,14 @@ export default function OrdersPage() {
                       {busyActions[`detail-${order.id}`]
                         ? 'Memuat...'
                         : isExpanded ? 'Tutup detail' : 'Lihat detail'}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-button remove-button"
+                      disabled={Boolean(busyActions[`delete-${order.id}`])}
+                      onClick={() => deleteOrder(order)}
+                    >
+                      {busyActions[`delete-${order.id}`] ? 'Menghapus...' : 'Hapus pesanan'}
                     </button>
                     {order.status === 'PENDING' && (
                       <>

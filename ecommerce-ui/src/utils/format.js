@@ -42,7 +42,9 @@ export function formatError(error) {
 export function getImageSource(image) {
   if (typeof image !== 'string' || image.trim() === '') return ''
   if (/^https?:\/\//i.test(image) || image.startsWith('data:image/')) return image
-  if (image.startsWith('/')) return new URL(image, services.product).toString()
+  if (image.startsWith('/')) {
+    return new URL(image.replace(/^\/+/, ''), `${services.product}/`).toString()
+  }
   const mimeType = image.startsWith('iVBOR')
     ? 'image/png'
     : image.startsWith('UklGR')
